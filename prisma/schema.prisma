@@ -1,0 +1,340 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  owner
+  staff
+}
+
+enum PackageStatus {
+  active
+  completed
+  expired
+  cancelled
+}
+
+enum FollowUpStatus {
+  pending
+  contacted
+  repurchased
+  not_interested
+}
+
+enum AppointmentStatus {
+  scheduled
+  done
+  cancelled
+  no_show
+}
+
+enum RecipientStatus {
+  pending
+  sent
+  skipped
+}
+
+enum BackupStatus {
+  running
+  success
+  failed
+}
+
+enum BackupTrigger {
+  scheduled
+  manual
+}
+
+model User {
+  id           Int       @id @default(autoincrement())
+  username     String    @unique
+  fullName     String    @map("full_name")
+  passwordHash String    @map("password_hash")
+  role         Role      @default(staff)
+  active       Boolean   @default(true)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  lastLoginAt  DateTime? @map("last_login_at") @db.Timestamptz(6)
+
+  sessions         Session[]
+  visits           Visit[]
+  productSales     ProductSale[]
+  customerPackages CustomerPackage[]
+  appointments     Appointment[]
+  campaigns        Campaign[]
+
+  @@map("users")
+}
+
+model Session {
+  id        String   @id // sha256 of the cookie token
+  userId    Int      @map("user_id")
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  lastSeenAt DateTime @default(now()) @map("last_seen_at") @db.Timestamptz(6)
+  userAgent String?  @map("user_agent")
+  ip        String?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model LoginAttempt {
+  id        Int      @id @default(autoincrement())
+  username  String
+  ip        String
+  success   Boolean
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([username, createdAt])
+  @@index([ip, createdAt])
+  @@map("login_attempts")
+}
+
+model Customer {
+  id        Int       @id @default(autoincrement())
+  name      String
+  phone     String?   @unique
+  birthday  DateTime? @db.Date
+  note      String?
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  visits             Visit[]
+  productSales       ProductSale[]
+  packages           CustomerPackage[]
+  appointments       Appointment[]
+  campaignRecipients CampaignRecipient[]
+
+  @@index([name])
+  @@map("customers")
+}
+
+model Service {
+  id         Int     @id @default(autoincrement())
+  name       String
+  price      Int     @default(0)
+  recallDays Int?    @map("recall_days")
+  active     Boolean @default(true)
+
+  packageItems         PackageItem[]
+  customerPackageItems CustomerPackageItem[]
+  visitItems           VisitItem[]
+  appointments         Appointment[]
+
+  @@map("services")
+}
+
+model Product {
+  id        Int     @id @default(autoincrement())
+  name      String
+  price     Int     @default(0)
+  usageDays Int     @map("usage_days")
+  active    Boolean @default(true)
+
+  sales ProductSale[]
+
+  @@map("products")
+}
+
+model Package {
+  id           Int     @id @default(autoincrement())
+  name         String
+  price        Int
+  validityDays Int?    @map("validity_days")
+  intervalDays Int?    @map("interval_days")
+  active       Boolean @default(true)
+
+  items            PackageItem[]
+  customerPackages CustomerPackage[]
+
+  @@map("packages")
+}
+
+model PackageItem {
+  id        Int     @id @default(autoincrement())
+  packageId Int     @map("package_id")
+  serviceId Int     @map("service_id")
+  sessions  Int
+  package   Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  service   Service @relation(fields: [serviceId], references: [id])
+
+  @@map("package_items")
+}
+
+model CustomerPackage {
+  id           Int           @id @default(autoincrement())
+  customerId   Int           @map("customer_id")
+  packageId    Int           @map("package_id")
+  purchaseDate DateTime      @map("purchase_date") @db.Date
+  paidAmount   Int           @map("paid_amount")
+  /// Set when the package was sold inside a "Ghi nhận" visit.
+  visitId      Int?          @map("visit_id")
+  visit        Visit?        @relation(fields: [visitId], references: [id], onDelete: SetNull)
+  expiryDate   DateTime?     @map("expiry_date") @db.Date
+  status       PackageStatus @default(active)
+  note         String?
+  createdBy    Int?          @map("created_by")
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  customer     Customer              @relation(fields: [customerId], references: [id])
+  package      Package               @relation(fields: [packageId], references: [id])
+  creator      User?                 @relation(fields: [createdBy], references: [id])
+  items        CustomerPackageItem[]
+  appointments Appointment[]
+
+  @@index([customerId])
+  @@index([status])
+  @@map("customer_packages")
+}
+
+model CustomerPackageItem {
+  id                Int             @id @default(autoincrement())
+  customerPackageId Int             @map("customer_package_id")
+  serviceId         Int             @map("service_id")
+  totalSessions     Int             @map("total_sessions")
+  usedSessions      Int             @default(0) @map("used_sessions")
+  customerPackage   CustomerPackage @relation(fields: [customerPackageId], references: [id], onDelete: Cascade)
+  service           Service         @relation(fields: [serviceId], references: [id])
+  visitItems        VisitItem[]
+
+  @@map("customer_package_items")
+}
+
+model Visit {
+  id         Int      @id @default(autoincrement())
+  customerId Int      @map("customer_id")
+  visitDate  DateTime @map("visit_date") @db.Date
+  note       String?
+  createdBy  Int?     @map("created_by")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  customer     Customer      @relation(fields: [customerId], references: [id])
+  creator      User?         @relation(fields: [createdBy], references: [id])
+  items        VisitItem[]
+  productSales ProductSale[]
+  appointments Appointment[]
+  packagesSold CustomerPackage[]
+
+  @@index([visitDate])
+  @@index([customerId])
+  @@map("visits")
+}
+
+model VisitItem {
+  id                    Int                  @id @default(autoincrement())
+  visitId               Int                  @map("visit_id")
+  serviceId             Int                  @map("service_id")
+  price                 Int                  @default(0)
+  customerPackageItemId Int?                 @map("customer_package_item_id")
+  /// Session ordinal at the moment of deduction (e.g. 5 in "buổi 5/10").
+  sessionNo             Int?                 @map("session_no")
+  visit                 Visit                @relation(fields: [visitId], references: [id], onDelete: Cascade)
+  service               Service              @relation(fields: [serviceId], references: [id])
+  customerPackageItem   CustomerPackageItem? @relation(fields: [customerPackageItemId], references: [id])
+
+  @@index([customerPackageItemId])
+  @@map("visit_items")
+}
+
+model ProductSale {
+  id             Int            @id @default(autoincrement())
+  customerId     Int            @map("customer_id")
+  productId      Int            @map("product_id")
+  visitId        Int?           @map("visit_id")
+  quantity       Int            @default(1)
+  /// Line total (unit price × quantity, possibly discounted).
+  price          Int            @default(0)
+  saleDate       DateTime       @map("sale_date") @db.Date
+  runOutDate     DateTime       @map("run_out_date") @db.Date
+  followUpStatus FollowUpStatus @default(pending) @map("follow_up_status")
+  followUpNote   String?        @map("follow_up_note")
+  contactedAt    DateTime?      @map("contacted_at") @db.Timestamptz(6)
+  createdBy      Int?           @map("created_by")
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  customer Customer @relation(fields: [customerId], references: [id])
+  product  Product  @relation(fields: [productId], references: [id])
+  visit    Visit?   @relation(fields: [visitId], references: [id], onDelete: SetNull)
+  creator  User?    @relation(fields: [createdBy], references: [id])
+
+  @@index([followUpStatus, runOutDate])
+  @@index([customerId])
+  @@map("product_sales")
+}
+
+model Appointment {
+  id                Int               @id @default(autoincrement())
+  customerId        Int               @map("customer_id")
+  serviceId         Int?              @map("service_id")
+  customerPackageId Int?              @map("customer_package_id")
+  scheduledAt       DateTime          @map("scheduled_at") @db.Timestamptz(6)
+  status            AppointmentStatus @default(scheduled)
+  note              String?
+  sourceVisitId     Int?              @map("source_visit_id")
+  createdBy         Int?              @map("created_by")
+  createdAt         DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  customer        Customer         @relation(fields: [customerId], references: [id])
+  service         Service?         @relation(fields: [serviceId], references: [id])
+  customerPackage CustomerPackage? @relation(fields: [customerPackageId], references: [id])
+  sourceVisit     Visit?           @relation(fields: [sourceVisitId], references: [id], onDelete: SetNull)
+  creator         User?            @relation(fields: [createdBy], references: [id])
+
+  @@index([scheduledAt])
+  @@index([customerId])
+  @@index([status])
+  @@map("appointments")
+}
+
+model Campaign {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String
+  createdBy Int?     @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  creator    User?               @relation(fields: [createdBy], references: [id])
+  recipients CampaignRecipient[]
+
+  @@map("campaigns")
+}
+
+model CampaignRecipient {
+  id              Int             @id @default(autoincrement())
+  campaignId      Int             @map("campaign_id")
+  customerId      Int             @map("customer_id")
+  renderedMessage String          @map("rendered_message")
+  status          RecipientStatus @default(pending)
+  sentAt          DateTime?       @map("sent_at") @db.Timestamptz(6)
+  campaign        Campaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  customer        Customer        @relation(fields: [customerId], references: [id])
+
+  @@index([campaignId])
+  @@map("campaign_recipients")
+}
+
+model BackupLog {
+  id           Int           @id @default(autoincrement())
+  startedAt    DateTime      @default(now()) @map("started_at") @db.Timestamptz(6)
+  finishedAt   DateTime?     @map("finished_at") @db.Timestamptz(6)
+  status       BackupStatus  @default(running)
+  fileName     String?       @map("file_name")
+  sizeBytes    BigInt?       @map("size_bytes")
+  uploaded     Boolean       @default(false)
+  errorMessage String?       @map("error_message")
+  trigger      BackupTrigger @default(scheduled)
+
+  @@map("backup_logs")
+}
+
+model Setting {
+  key   String @id
+  value String
+
+  @@map("settings")
+}

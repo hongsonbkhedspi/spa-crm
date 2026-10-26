@@ -1,0 +1,116 @@
+@import "tailwindcss";
+
+/*
+  "Màu theo chủ đề": each kind of information has one colour family, used everywhere it
+  appears (nav icon, block header, tags, counts), so the owner reads the topic by colour.
+    appt  = Lịch hẹn        tím hoa cà
+    pkg   = Gói liệu trình  xanh ngọc (also the brand/action colour: jade)
+    prod  = Mỹ phẩm         hồng sen
+    cust  = Khách hàng      xanh trời
+    money = Tiền, nhật ký, khuyến mãi  vàng mật ong
+    alert = Quá hạn, lỗi (lotus)       đỏ son — solid fill for banners
+    warn  = Sắp đến hạn (turmeric)     cam
+  Each family: base (fills, icon chips), ink (text on wash, ≥ 4.5:1), wash (block tint).
+*/
+@theme {
+  --font-sans: var(--font-be-vietnam), ui-sans-serif, system-ui, sans-serif;
+
+  --color-paper: #f8f6f8;
+  --color-surface: #ffffff;
+  --color-ink: #211b26;
+  --color-ink-soft: #4b4452;
+  --color-muted: #6c6572;
+  --color-line: #e6e0e8;
+  --color-line-strong: #cbc3cf;
+
+  --color-jade: #2e7363;
+  --color-jade-deep: #1f5a4d;
+  --color-jade-wash: #e1f0ea;
+
+  --color-appt: #7b61c9;
+  --color-appt-ink: #4c3891;
+  --color-appt-wash: #efeafb;
+
+  --color-prod: #cf4f7e;
+  --color-prod-ink: #982a55;
+  --color-prod-wash: #fce8f0;
+
+  --color-cust: #3a81b5;
+  --color-cust-ink: #1c5884;
+  --color-cust-wash: #e3eff8;
+
+  --color-money: #b5860f;
+  --color-money-ink: #765300;
+  --color-money-wash: #faf1d4;
+
+  --color-turmeric: #a3480b;
+  --color-turmeric-bright: #d06c14;
+  --color-turmeric-wash: #fdeee0;
+
+  --color-lotus: #c3291e;
+  --color-lotus-wash: #fde7e4;
+
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: 1.15rem;
+  --text-sm: 0.9375rem;
+  --text-sm--line-height: 1.4rem;
+  --text-base: 1rem;
+  --text-lg: 1.0625rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.625rem;
+  --text-2xl--line-height: 2rem;
+  --text-3xl: 2.125rem;
+
+  --radius-field: 12px;
+  --radius-panel: 20px;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    line-height: 1.45;
+    font-feature-settings: "tnum" 0;
+  }
+  /* Safari zooms into inputs smaller than 16px. */
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-jade);
+    outline-offset: 2px;
+  }
+  .num {
+    font-variant-numeric: tabular-nums;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@keyframes bead-in {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+}
