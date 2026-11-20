@@ -8,7 +8,12 @@ function checkPassword(pw: string) {
   if (pw.length < 8) throw new UserError("Mật khẩu tối thiểu 8 ký tự");
 }
 
-export async function createStaff(input: { username: string; fullName: string; password: string }): Promise<ActionResult> {
+export async function createUser(input: {
+  username: string;
+  fullName: string;
+  password: string;
+  role: "owner" | "staff";
+}): Promise<ActionResult> {
   return run(async () => {
     await requireOwner();
     const username = input.username.trim().toLowerCase();
@@ -16,13 +21,14 @@ export async function createStaff(input: { username: string; fullName: string; p
     if (!/^[a-z0-9._-]{3,32}$/.test(username))
       throw new UserError("Tên đăng nhập 3–32 ký tự, chữ thường không dấu, số, dấu . _ -");
     if (!fullName) throw new UserError("Nhập họ tên");
+    if (input.role !== "owner" && input.role !== "staff") throw new UserError("Chọn vai trò");
     checkPassword(input.password);
     if (await db.user.findUnique({ where: { username } })) throw new UserError("Tên đăng nhập đã tồn tại");
     await db.user.create({
-      data: { username, fullName, role: "staff", passwordHash: await hashPassword(input.password) },
+      data: { username, fullName, role: input.role, passwordHash: await hashPassword(input.password) },
     });
     revalidatePath("/tai-khoan");
-    return { ok: true, message: `Đã thêm nhân viên ${fullName}` };
+    return { ok: true, message: `Đã thêm ${input.role === "owner" ? "chủ spa" : "nhân viên"} ${fullName}` };
   });
 }
 

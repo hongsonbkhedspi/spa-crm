@@ -8,7 +8,8 @@ import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Tag } from "@/components/ui/tag";
 import { cn } from "@/lib/utils";
-import { createStaff, resetPassword, revokeAllSessions, revokeSession, setUserActive } from "@/actions/users";
+import { InfoTip } from "@/components/ui/info-tip";
+import { createUser, resetPassword, revokeAllSessions, revokeSession, setUserActive } from "@/actions/users";
 
 export type AccountRow = {
   id: number;
@@ -39,7 +40,7 @@ export function AccountsView({ rows }: { rows: AccountRow[] }) {
     <>
       <div className="mb-4 flex justify-end">
         <Button onClick={() => setAdding(true)}>
-          <Plus className="size-4" /> Thêm nhân viên
+          <Plus className="size-4" /> Thêm tài khoản
         </Button>
       </div>
 
@@ -120,25 +121,31 @@ export function AccountsView({ rows }: { rows: AccountRow[] }) {
         ))}
       </ul>
 
-      <AddStaffDialog open={adding} onClose={() => setAdding(false)} />
+      <AddUserDialog open={adding} onClose={() => setAdding(false)} />
       <ResetPasswordDialog user={resetFor} onClose={() => setResetFor(null)} />
     </>
   );
 }
 
-function AddStaffDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+const ROLES = [
+  { value: "staff", label: "Nhân viên" },
+  { value: "owner", label: "Chủ spa" },
+] as const;
+const EMPTY = { fullName: "", username: "", password: "", role: "staff" as "owner" | "staff" };
+
+function AddUserDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [pending, start] = useTransition();
-  const [form, setForm] = useState({ fullName: "", username: "", password: "" });
+  const [form, setForm] = useState(EMPTY);
   const submit = () =>
     start(async () => {
-      const r = await createStaff(form);
+      const r = await createUser(form);
       if (!r.ok) return void toast.error(r.error);
-      toast.success(r.message ?? "Đã thêm nhân viên");
-      setForm({ fullName: "", username: "", password: "" });
+      toast.success(r.message ?? "Đã thêm tài khoản");
+      setForm(EMPTY);
       onClose();
     });
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()} title="Thêm nhân viên">
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()} title="Thêm tài khoản">
       <form
         className="flex flex-col gap-4"
         onSubmit={(e) => {
@@ -160,7 +167,37 @@ function AddStaffDialog({ open, onClose }: { open: boolean; onClose: () => void 
             required
           />
         </Field>
-        <Field label="Mật khẩu ban đầu" htmlFor="st-pw" required info="Tối thiểu 8 ký tự. Nhân viên nên tự đổi sau lần đăng nhập đầu.">
+        <fieldset className="flex flex-col gap-1.5">
+          <legend className="mb-1.5 flex items-center gap-1 text-sm font-medium text-ink-soft">
+            Vai trò
+            <InfoTip
+              label="Giải thích vai trò"
+              text="Nhân viên: ghi nhận, lịch hẹn, khách hàng, gói, khuyến mãi. Chủ spa: thêm danh mục và giá, doanh thu, huỷ/điều chỉnh gói, xoá lượt khách, tài khoản, cài đặt, sao lưu."
+            />
+          </legend>
+          <div className="grid grid-cols-2 gap-2" role="radiogroup">
+            {ROLES.map((r) => (
+              <label
+                key={r.value}
+                className={cn(
+                  "flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-[var(--radius-field)] border px-3 text-base",
+                  form.role === r.value ? "border-jade bg-jade-wash font-semibold text-jade-deep" : "border-line-strong bg-surface text-ink-soft",
+                )}
+              >
+                <input
+                  type="radio"
+                  name="role"
+                  value={r.value}
+                  checked={form.role === r.value}
+                  onChange={() => setForm({ ...form, role: r.value })}
+                  className="size-4 accent-jade"
+                />
+                {r.label}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+        <Field label="Mật khẩu ban đầu" htmlFor="st-pw" required info="Tối thiểu 8 ký tự. Người dùng nên tự đổi sau lần đăng nhập đầu.">
           <Input id="st-pw" type="text" autoComplete="new-password" minLength={8} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
         </Field>
         <div className="flex justify-end gap-2 border-t border-line pt-3">
@@ -168,7 +205,7 @@ function AddStaffDialog({ open, onClose }: { open: boolean; onClose: () => void 
             Huỷ
           </Button>
           <Button type="submit" disabled={pending}>
-            Thêm nhân viên
+            {form.role === "owner" ? "Thêm chủ spa" : "Thêm nhân viên"}
           </Button>
         </div>
       </form>
