@@ -16,6 +16,7 @@ export const NAV: NavItem[] = [
   { href: "/", label: "Hôm nay", icon: "sun", topic: "appt" },
   { href: "/ghi-nhan", label: "Ghi nhận", icon: "pen", topic: "pkg" },
   { href: "/nhat-ky", label: "Nhật ký", icon: "book", topic: "money" },
+  { href: "/doanh-thu", label: "Doanh thu", icon: "chart", topic: "money", ownerOnly: true },
   { href: "/lich-hen", label: "Lịch hẹn", icon: "calendar", topic: "appt" },
   { href: "/goi", label: "Gói liệu trình", icon: "beads", topic: "pkg", badge: "packages" },
   { href: "/my-pham-sap-het", label: "Mỹ phẩm sắp hết", icon: "droplet", topic: "prod", badge: "products" },

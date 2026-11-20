@@ -1,5 +1,6 @@
 import {
   BookOpen,
+  ChartColumn,
   CalendarDays,
   Droplet,
   FlaskConical,
@@ -28,6 +29,7 @@ const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   sun: Sun,
   pen: PenLine,
   book: BookOpen,
+  chart: ChartColumn,
   calendar: CalendarDays,
   beads: BeadsIcon,
   droplet: Droplet,
