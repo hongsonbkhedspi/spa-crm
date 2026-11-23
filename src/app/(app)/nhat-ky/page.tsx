@@ -91,7 +91,12 @@ export default async function LogPage({ searchParams }: { searchParams: Promise<
         packagesSold: { include: { package: { select: { name: true } } } },
       },
     }),
-    db.user.findMany({ select: { id: true, fullName: true }, orderBy: [{ active: "desc" }, { fullName: "asc" }] }),
+    // Locked accounts are left out, unless one is the current ?by= filter.
+    db.user.findMany({
+      where: { OR: [{ active: true }, ...(by ? [{ id: Number(by) }] : [])] },
+      select: { id: true, fullName: true },
+      orderBy: { fullName: "asc" },
+    }),
     // Totals cover every matching visit, not just this page.
     db.visitItem.aggregate({ where: { visit: where }, _sum: { price: true } }),
     db.productSale.aggregate({ where: { visit: where }, _sum: { price: true } }),
