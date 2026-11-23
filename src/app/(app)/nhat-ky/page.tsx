@@ -3,8 +3,9 @@ import { BookOpen, ChevronLeft, ChevronRight } from "lucide-react";
 import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { dateToStr, fmtDate, instantToTimeStr, isDateStr, relativeDay, strToDate, todayStr } from "@/lib/dates";
+import { dateToStr, fmtDate, instantToTimeStr, isDateStr, relativeDay, strToDate, todayStr, weekday } from "@/lib/dates";
 import { fmtMoney } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { searchCatalogIds, searchCustomerIds } from "@/lib/search";
 import { PageHeader, Empty } from "@/components/ui/page";
 import { Tag } from "@/components/ui/tag";
@@ -17,7 +18,7 @@ import { logHref } from "./href";
 export const metadata = { title: "Nhật ký" };
 
 const PAGE_SIZE = 100;
-const COLS = "md:grid-cols-[88px_minmax(140px,1fr)_minmax(200px,2fr)_minmax(140px,1.2fr)_minmax(100px,0.8fr)_120px_44px]";
+const COLS = "lg:grid-cols-[120px_minmax(0,1fr)_minmax(0,1.6fr)_minmax(0,1.1fr)_minmax(0,1.3fr)_minmax(0,0.8fr)_110px_44px]";
 
 type Search = { from?: string; to?: string; date?: string; q?: string; cust?: string; it?: string; item?: string; by?: string; page?: string };
 
@@ -157,11 +158,12 @@ export default async function LogPage({ searchParams }: { searchParams: Promise<
         </Empty>
       ) : (
         <div className="overflow-hidden rounded-[var(--radius-panel)] border border-money/30 bg-surface">
-          <div className={`hidden gap-4 bg-money-wash px-4 py-3 text-xs font-semibold text-money-ink md:grid ${COLS}`}>
+          <div className={`hidden gap-4 bg-money-wash px-4 py-3 text-xs font-semibold text-money-ink lg:grid ${COLS}`}>
             <span>{oneDay ? "Giờ" : "Ngày"}</span>
             <span>Khách</span>
             <span>Dịch vụ</span>
             <span>Mỹ phẩm</span>
+            <span>Ghi chú</span>
             <span>Người nhập</span>
             <span className="text-right">Tổng tiền</span>
             <span />
@@ -169,21 +171,22 @@ export default async function LogPage({ searchParams }: { searchParams: Promise<
           <ul className="divide-y divide-line">
             {rows.map(({ v, total }) => {
               const time = instantToTimeStr(v.createdAt);
-              const day = fmtDate(dateToStr(v.visitDate));
+              const ds = dateToStr(v.visitDate);
+              const day = `${weekday(ds)} ${fmtDate(ds)}`;
               return (
-                <li key={v.id} className={`grid grid-cols-[1fr_auto] gap-x-3 gap-y-1.5 px-4 py-3 md:items-start md:gap-4 ${COLS}`}>
-                  <span className="text-sm text-muted md:flex md:flex-col md:pt-0.5">
-                    {!oneDay && <span className="num md:text-ink-soft">{day} </span>}
+                <li key={v.id} className={`grid grid-cols-[1fr_auto] gap-x-3 gap-y-1.5 px-4 py-3 lg:items-start lg:gap-4 ${COLS}`}>
+                  <span className="text-sm text-muted lg:flex lg:flex-col lg:pt-0.5">
+                    {!oneDay && <span className="num whitespace-nowrap lg:text-ink-soft">{day} </span>}
                     <span className="num">{time}</span>
-                    {v.creator && <span className="md:hidden"> · {v.creator.fullName}</span>}
+                    {v.creator && <span className="lg:hidden"> · {v.creator.fullName}</span>}
                   </span>
                   <Link
                     href={`/khach-hang/${v.customer.id}`}
-                    className="col-start-1 row-start-2 font-semibold hover:text-jade-deep md:col-start-auto md:row-start-auto"
+                    className="col-start-1 row-start-2 font-semibold hover:text-jade-deep lg:col-start-auto lg:row-start-auto"
                   >
                     {v.customer.name}
                   </Link>
-                  <div className="col-span-2 flex flex-col gap-1 text-sm md:col-span-1">
+                  <div className="col-span-2 flex flex-col gap-1 text-sm lg:col-span-1">
                     {v.items.map((i) => (
                       <span key={i.id} className="flex flex-wrap items-center gap-1.5">
                         {i.service.name}
@@ -199,9 +202,8 @@ export default async function LogPage({ searchParams }: { searchParams: Promise<
                         <Tag tone="turmeric">Mua gói</Tag> {p.package.name}
                       </span>
                     ))}
-                    {v.note && <span className="text-xs text-muted">{v.note}</span>}
                   </div>
-                  <div className="col-span-2 text-sm text-prod-ink md:col-span-1">
+                  <div className="col-span-2 text-sm text-prod-ink lg:col-span-1">
                     {v.productSales.map((p) => (
                       <div key={p.id}>
                         {p.product.name}
@@ -209,11 +211,21 @@ export default async function LogPage({ searchParams }: { searchParams: Promise<
                       </div>
                     ))}
                   </div>
-                  <span className="hidden text-sm text-ink-soft md:block">{v.creator?.fullName ?? "—"}</span>
-                  <span className="num col-start-2 row-start-1 text-right font-semibold text-money-ink md:col-start-auto md:row-start-auto">
+                  <div className={cn("col-span-2 whitespace-pre-line break-words text-sm text-ink-soft lg:col-span-1", !v.note && "hidden lg:block")}>
+                    {v.note ? (
+                      <>
+                        <span className="text-muted lg:hidden">Ghi chú: </span>
+                        {v.note}
+                      </>
+                    ) : (
+                      <span className="text-muted">—</span>
+                    )}
+                  </div>
+                  <span className="hidden text-sm text-ink-soft lg:block">{v.creator?.fullName ?? "—"}</span>
+                  <span className="num col-start-2 row-start-1 text-right font-semibold text-money-ink lg:col-start-auto lg:row-start-auto">
                     {fmtMoney(total)}
                   </span>
-                  <div className="col-start-2 row-start-2 flex justify-end md:col-start-auto md:row-start-auto md:-mt-1.5">
+                  <div className="col-start-2 row-start-2 flex justify-end lg:col-start-auto lg:row-start-auto lg:-mt-1.5">
                     {isOwner && <DeleteVisit id={v.id} label={`${v.customer.name} · ${day} ${time}`} />}
                   </div>
                 </li>
