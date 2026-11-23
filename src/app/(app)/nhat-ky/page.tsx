@@ -18,7 +18,7 @@ import { logHref } from "./href";
 export const metadata = { title: "Nhật ký" };
 
 const PAGE_SIZE = 100;
-const COLS = "lg:grid-cols-[120px_minmax(0,1fr)_minmax(0,1.6fr)_minmax(0,1.1fr)_minmax(0,1.3fr)_minmax(0,0.8fr)_110px_44px]";
+const COLS = "lg:grid-cols-[120px_minmax(0,1fr)_minmax(0,2fr)_minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,0.7fr)_110px_44px]";
 
 type Search = { from?: string; to?: string; date?: string; q?: string; cust?: string; it?: string; item?: string; by?: string; page?: string };
 
@@ -188,27 +188,27 @@ export default async function LogPage({ searchParams }: { searchParams: Promise<
                   </Link>
                   <div className="col-span-2 flex flex-col gap-1 text-sm lg:col-span-1">
                     {v.items.map((i) => (
-                      <span key={i.id} className="flex flex-wrap items-center gap-1.5">
+                      <Line key={i.id} price={i.customerPackageItemId ? null : i.price}>
                         {i.service.name}
                         {i.customerPackageItemId && (
                           <Tag tone="jade">
                             buổi {i.sessionNo ?? "?"}/{i.customerPackageItem?.totalSessions ?? "?"}
                           </Tag>
                         )}
-                      </span>
+                      </Line>
                     ))}
                     {v.packagesSold.map((p) => (
-                      <span key={p.id} className="flex items-center gap-1.5">
+                      <Line key={p.id} price={p.paidAmount}>
                         <Tag tone="turmeric">Mua gói</Tag> {p.package.name}
-                      </span>
+                      </Line>
                     ))}
                   </div>
-                  <div className="col-span-2 text-sm text-prod-ink lg:col-span-1">
+                  <div className="col-span-2 flex flex-col gap-1 text-sm text-prod-ink lg:col-span-1">
                     {v.productSales.map((p) => (
-                      <div key={p.id}>
+                      <Line key={p.id} price={p.price}>
                         {p.product.name}
-                        {p.quantity > 1 && <span className="num"> ×{p.quantity}</span>}
-                      </div>
+                        {p.quantity > 1 && <span className="num">×{p.quantity}</span>}
+                      </Line>
                     ))}
                   </div>
                   <div className={cn("col-span-2 whitespace-pre-line break-words text-sm text-ink-soft lg:col-span-1", !v.note && "hidden lg:block")}>
@@ -257,5 +257,15 @@ export default async function LogPage({ searchParams }: { searchParams: Promise<
         </nav>
       )}
     </>
+  );
+}
+
+/** One sold line: name on the left, its own price on the right (null = paid by package, no price). */
+function Line({ price, children }: { price: number | null; children: React.ReactNode }) {
+  return (
+    <div className="flex items-baseline gap-3">
+      <span className="flex min-w-0 flex-wrap items-center gap-1.5">{children}</span>
+      {price !== null && <span className="num ml-auto shrink-0 whitespace-nowrap text-ink-soft">{fmtMoney(price)}</span>}
+    </div>
   );
 }
