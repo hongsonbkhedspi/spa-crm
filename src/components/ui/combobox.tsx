@@ -29,16 +29,22 @@ type Props = {
   exclude?: number[];
   id?: string;
   className?: string;
+  /** Form field name for the typed text (e.g. in a GET filter form). */
+  name?: string;
+  /** Initial text. */
+  defaultQuery?: string;
+  /** Called on every keystroke (not on select). */
+  onQueryChange?: (q: string) => void;
 };
 
 /** Searchable combobox. ↑/↓ to move, Enter to pick, Esc to close. */
 export const Combobox = forwardRef<ComboboxHandle, Props>(function Combobox(
-  { items, load, onSelect, placeholder, autoFocus, clearOnSelect = true, footer, exclude, id, className },
+  { items, load, onSelect, placeholder, autoFocus, clearOnSelect = true, footer, exclude, id, className, name, defaultQuery, onQueryChange },
   ref,
 ) {
   const listId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
-  const [q, setQ] = useState("");
+  const [q, setQ] = useState(defaultQuery ?? "");
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const [remote, setRemote] = useState<ComboItem[]>([]);
@@ -113,6 +119,7 @@ export const Combobox = forwardRef<ComboboxHandle, Props>(function Combobox(
         <input
           ref={inputRef}
           id={id}
+          name={name}
           role="combobox"
           aria-expanded={open}
           aria-controls={listId}
@@ -124,6 +131,7 @@ export const Combobox = forwardRef<ComboboxHandle, Props>(function Combobox(
           onChange={(e) => {
             setQ(e.target.value);
             setOpen(true);
+            onQueryChange?.(e.target.value);
           }}
           onFocus={() => setOpen(true)}
           onBlur={() => setTimeout(close, 150)}

@@ -3,7 +3,7 @@ import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { changeOwnPassword } from "@/actions/users";
 
 const EMPTY = { current: "", next: "", confirm: "" };
@@ -25,13 +25,13 @@ export function ChangePasswordForm() {
       }}
     >
       <Field label="Mật khẩu hiện tại" htmlFor="pw-cur" required>
-        <Input id="pw-cur" type="password" autoComplete="current-password" value={form.current} onChange={(e) => setForm({ ...form, current: e.target.value })} required />
+        <PasswordInput id="pw-cur" autoComplete="current-password" value={form.current} onChange={(e) => setForm({ ...form, current: e.target.value })} required />
       </Field>
       <Field label="Mật khẩu mới" htmlFor="pw-new" required info="Tối thiểu 8 ký tự. Các thiết bị khác sẽ bị đăng xuất.">
-        <Input id="pw-new" type="password" autoComplete="new-password" minLength={8} value={form.next} onChange={(e) => setForm({ ...form, next: e.target.value })} required />
+        <PasswordInput id="pw-new" autoComplete="new-password" minLength={8} value={form.next} onChange={(e) => setForm({ ...form, next: e.target.value })} required />
       </Field>
       <Field label="Nhập lại mật khẩu mới" htmlFor="pw-confirm" required>
-        <Input id="pw-confirm" type="password" autoComplete="new-password" minLength={8} value={form.confirm} onChange={(e) => setForm({ ...form, confirm: e.target.value })} required />
+        <PasswordInput id="pw-confirm" autoComplete="new-password" minLength={8} value={form.confirm} onChange={(e) => setForm({ ...form, confirm: e.target.value })} required />
       </Field>
       <div>
         <Button type="submit" disabled={pending}>

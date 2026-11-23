@@ -4,6 +4,7 @@ import { login } from "../actions";
 import { Button } from "@/components/ui/button";
 import { Checkbox, Input } from "@/components/ui/input";
 import { Field } from "@/components/ui/field";
+import { PasswordInput } from "@/components/ui/password-input";
 
 export function LoginForm({ next }: { next: string }) {
   const [state, action, pending] = useActionState(login, undefined);
@@ -14,7 +15,7 @@ export function LoginForm({ next }: { next: string }) {
         <Input id="username" name="username" autoComplete="username" autoCapitalize="none" autoCorrect="off" autoFocus required />
       </Field>
       <Field label="Mật khẩu" htmlFor="password">
-        <Input id="password" name="password" type="password" autoComplete="current-password" required />
+        <PasswordInput id="password" name="password" autoComplete="current-password" required />
       </Field>
       <label className="flex min-h-11 items-center gap-3 text-sm">
         <Checkbox name="remember" defaultChecked />

@@ -16,6 +16,17 @@ export function foldedSql(column: string) {
   return Prisma.raw(`lower(translate(${column}, '${FROM}', '${TO}'))`);
 }
 
+/** Ids of services, products and packages whose name contains `q` (accent-insensitive, inactive ones included). */
+export async function searchCatalogIds(q: string) {
+  const f = `%${fold(q.trim()).replace(/[%_\\]/g, "")}%`;
+  const ids = (table: "services" | "products" | "packages") =>
+    db.$queryRaw<{ id: number }[]>`SELECT id FROM ${Prisma.raw(table)} WHERE ${foldedSql("name")} LIKE ${f}`.then((r) =>
+      r.map((x) => x.id),
+    );
+  const [services, products, packages] = await Promise.all([ids("services"), ids("products"), ids("packages")]);
+  return { services, products, packages };
+}
+
 /** Customer ids matching a name (accent-insensitive) or phone fragment. */
 export async function searchCustomerIds(q: string, limit = 50): Promise<number[]> {
   const term = q.trim();

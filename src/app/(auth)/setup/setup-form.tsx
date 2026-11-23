@@ -4,6 +4,7 @@ import { setupOwner } from "../actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/ui/field";
+import { PasswordInput } from "@/components/ui/password-input";
 
 export function SetupForm() {
   const [state, action, pending] = useActionState(setupOwner, undefined);
@@ -19,7 +20,7 @@ export function SetupForm() {
         <Input id="username" name="username" autoComplete="username" autoCapitalize="none" autoCorrect="off" required />
       </Field>
       <Field label="Mật khẩu" htmlFor="password" required info="Tối thiểu 8 ký tự.">
-        <Input id="password" name="password" type="password" autoComplete="new-password" minLength={8} required />
+        <PasswordInput id="password" name="password" autoComplete="new-password" minLength={8} required />
       </Field>
       {state?.error && (
         <p role="alert" className="rounded-[var(--radius-field)] bg-lotus-wash px-3 py-2 text-sm text-lotus">
